@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import './App.css';
+
+// Component Imports
+import Header from './components/Header';
+import Footer from './components/Footer';
+import Controls from './components/Controls';
+import ImageGrid from './components/ImageGrid';
+import Toast from './components/Toast';
 
 function App() {
+  // --- State ---
   const [images, setImages] = useState([]);
   const [config, setConfig] = useState({
     width: 500,
@@ -13,20 +20,20 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [notification, setNotification] = useState('');
 
-  // Helper to show temporary messages
+  // --- Helpers ---
   const showNotification = (msg) => {
     setNotification(msg);
-    setTimeout(() => setNotification(''), 2000);
+    setTimeout(() => setNotification(''), 2500);
   };
 
-  // Handle Global Paste
+  // --- Logic 1: Paste Handler ---
   useEffect(() => {
     const handlePaste = (e) => {
-      // Prevent pasting if typing in an input field
-      if (e.target.tagName === 'INPUT') return;
+      // Ignore if user is typing in inputs
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
       if (images.length >= 10) {
-        showNotification('⚠️ Max 10 images reached');
+        showNotification('⚠️ Max limit of 10 images reached');
         return;
       }
       
@@ -39,22 +46,23 @@ function App() {
           const reader = new FileReader();
           reader.onload = (event) => {
             setImages(prev => [...prev, event.target.result]);
-            showNotification('✅ Image added!');
+            showNotification('✅ Image added to queue!');
           };
           reader.readAsDataURL(blob);
           foundImage = true;
         }
       }
+      if (!foundImage) showNotification('ℹ️ No image found in clipboard');
     };
+
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, [images]);
 
-  const removeImage = (index) => {
-    setImages(images.filter((_, i) => i !== index));
-  };
-
+  // --- Logic 2: Download Handler ---
   const handleDownload = async () => {
+    if (images.length === 0) return;
+    
     setIsProcessing(true);
     const zip = new JSZip();
 
@@ -74,7 +82,7 @@ function App() {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
           }
 
-          // Calculate "Contain" Aspect Ratio
+          // Smart "Contain" Resize Logic
           const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
           const w = img.width * scale;
           const h = img.height * scale;
@@ -84,138 +92,87 @@ function App() {
           ctx.drawImage(img, x, y, w, h);
 
           canvas.toBlob((blob) => {
-            zip.file(`logo-${index + 1}.png`, blob);
+            zip.file(`logo-fixed-${index + 1}.png`, blob);
             resolve();
           });
         };
       });
     };
 
-    await Promise.all(images.map((img, i) => processImage(img, i)));
-    
-    zip.generateAsync({ type: 'blob' }).then((content) => {
-      saveAs(content, 'processed-logos.zip');
-      setIsProcessing(false);
+    try {
+      await Promise.all(images.map((img, i) => processImage(img, i)));
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, 'logofixer-bundle.zip');
       showNotification('🎉 Download started!');
-    });
+    } catch (error) {
+      console.error(error);
+      showNotification('❌ Error processing images');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
+  // --- Render ---
   return (
-    <div className="page-layout">
-      
-      {/* 1. TOP NAVIGATION */}
-      <nav className="navbar">
-        <div className="nav-content">
-          <div className="brand">
-            <div className="brand-icon">⚡</div>
-            <span>LogoFixer</span>
-          </div>
-          <a href="https://github.com" target="_blank" rel="noreferrer" className="github-btn">
-            ★ Star on GitHub
-          </a>
-        </div>
-      </nav>
+    <>
+      <Header />
+      <Toast message={notification} />
 
-      {/* 2. MAIN WORKSPACE */}
-      <main className="workspace">
-        
-        {/* Toast Notification */}
-        <div className={`notification ${notification ? 'show' : ''}`}>
-          {notification}
-        </div>
-
-        {/* The Main Card Tool */}
-        <div className="main-card">
-          <header className="card-header">
-            <div className="logo-badge">LS</div>
-            <div>
-              <h1>Logo Standardizer</h1>
-              <p>Paste screenshots (Ctrl+V) to pad & resize</p>
-            </div>
-          </header>
-
-          <div className="controls-grid">
-            <div className="input-wrapper">
-              <label>Width</label>
-              <input 
-                type="number" 
-                value={config.width} 
-                onChange={(e) => setConfig({...config, width: e.target.value})} 
-              />
-              <span>px</span>
-            </div>
-            <div className="input-wrapper">
-              <label>Height</label>
-              <input 
-                type="number" 
-                value={config.height} 
-                onChange={(e) => setConfig({...config, height: e.target.value})} 
-              />
-              <span>px</span>
-            </div>
-            <div className="input-wrapper">
-              <label>Background</label>
-              <select 
-                value={config.bgColor}
-                onChange={(e) => setConfig({...config, bgColor: e.target.value})}
-              >
-                <option value="#ffffff">White</option>
-                <option value="#000000">Black</option>
-                <option value="transparent">Transparent</option>
-                <option value="#808080">Gray</option>
-              </select>
-            </div>
+      <main style={{ flex: 1, padding: '3rem 0', backgroundColor: 'var(--bg-body)' }}>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          
+          {/* Hero Section */}
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem', maxWidth: '600px' }}>
+            <h1 style={{ 
+              fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem',
+              background: 'linear-gradient(to right, var(--text-main), var(--primary))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Standardize Your Logos
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.6' }}>
+              Paste screenshots or raw logos directly from your clipboard. We'll center, pad, and resize them to your exact specifications.
+            </p>
           </div>
 
-          <div className="preview-container">
-            {images.length === 0 ? (
-                <div className="empty-state">
-                    <div className="dashed-box">
-                        <span className="icon">📋</span>
-                        <h3>Ready for Clipboard</h3>
-                        <p>Press <strong>Ctrl+V</strong> anywhere to paste logos</p>
-                    </div>
-                </div>
-            ) : (
-                <>
-                    <div className="grid-header">
-                        <span>Preview ({images.length}/10)</span>
-                        <button className="clear-link" onClick={() => setImages([])}>Clear All</button>
-                    </div>
-                    <div className="image-grid">
-                        {images.map((img, idx) => (
-                            <div key={idx} className="image-card">
-                                <img src={img} alt="logo preview" />
-                                <button onClick={() => removeImage(idx)} className="delete-btn" title="Remove">
-                                    ×
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </>
-            )}
-          </div>
-
-          <div className="card-footer">
-            <button 
-                className="action-btn" 
+          {/* Main Card */}
+          <div style={{
+            width: '100%',
+            maxWidth: '650px',
+            backgroundColor: 'var(--bg-card)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-lg)',
+            overflow: 'hidden',
+            border: '1px solid var(--border)'
+          }}>
+            
+            <Controls config={config} setConfig={setConfig} />
+            
+            <ImageGrid images={images} setImages={setImages} />
+            
+            {/* Action Bar */}
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: '#fff',
+              borderTop: '1px solid var(--border)'
+            }}>
+              <button 
+                className="btn btn-primary"
+                style={{ width: '100%', fontSize: '1.1rem', padding: '1rem' }}
                 disabled={images.length === 0 || isProcessing}
                 onClick={handleDownload}
-            >
-                {isProcessing ? 'Processing Bundle...' : 'Download ZIP Bundle'}
-            </button>
+              >
+                {isProcessing ? 'Processing Bundle...' : `Download ${images.length > 0 ? images.length + ' ' : ''}Logos as ZIP`}
+              </button>
+            </div>
+
           </div>
         </div>
       </main>
 
-      {/* 3. FOOTER */}
-      <footer className="site-footer">
-        <div className="footer-content">
-          <p>© 2024 LogoFixer Tool. All processing happens in your browser.</p>
-        </div>
-      </footer>
-
-    </div>
+      <Footer />
+    </>
   );
 }
 
