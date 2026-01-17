@@ -11,12 +11,16 @@ import Toast from './components/Toast';
 
 function App() {
   // --- State ---
+  // Image structure: { id: number, src: string (base64), bgColor: string }
   const [images, setImages] = useState([]);
+  
+  // Config determines default settings for NEW images
   const [config, setConfig] = useState({
     width: 500,
     height: 500,
     bgColor: '#ffffff'
   });
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [notification, setNotification] = useState('');
 
@@ -26,10 +30,16 @@ function App() {
     setTimeout(() => setNotification(''), 2500);
   };
 
+  // Function passed to controls to sync settings
+  const handleApplyColorToAll = () => {
+    if (images.length === 0) return;
+    setImages(prev => prev.map(img => ({ ...img, bgColor: config.bgColor })));
+    showNotification(`Applied ${config.bgColor} to all images`);
+  };
+
   // --- Logic 1: Paste Handler ---
   useEffect(() => {
     const handlePaste = (e) => {
-      // Ignore if user is typing in inputs
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
       if (images.length >= 10) {
@@ -45,7 +55,13 @@ function App() {
           const blob = item.getAsFile();
           const reader = new FileReader();
           reader.onload = (event) => {
-            setImages(prev => [...prev, event.target.result]);
+            // NEW: Create an object with ID and inherit current Default BG
+            const newImage = {
+              id: Date.now() + Math.random(),
+              src: event.target.result,
+              bgColor: config.bgColor 
+            };
+            setImages(prev => [...prev, newImage]);
             showNotification('✅ Image added to queue!');
           };
           reader.readAsDataURL(blob);
@@ -57,7 +73,7 @@ function App() {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [images]);
+  }, [images, config.bgColor]); // Added config.bgColor dependency so pasted image gets current default
 
   // --- Logic 2: Download Handler ---
   const handleDownload = async () => {
@@ -66,19 +82,19 @@ function App() {
     setIsProcessing(true);
     const zip = new JSZip();
 
-    const processImage = (src, index) => {
+    const processImage = (imageObj, index) => {
       return new Promise((resolve) => {
         const img = new Image();
-        img.src = src;
+        img.src = imageObj.src;
         img.onload = () => {
           const canvas = document.createElement('canvas');
           canvas.width = parseInt(config.width);
           canvas.height = parseInt(config.height);
           const ctx = canvas.getContext('2d');
 
-          // Fill Background
-          if (config.bgColor !== 'transparent') {
-            ctx.fillStyle = config.bgColor;
+          // NEW: Use the specific image's background color
+          if (imageObj.bgColor !== 'transparent') {
+            ctx.fillStyle = imageObj.bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
           }
 
@@ -92,7 +108,7 @@ function App() {
           ctx.drawImage(img, x, y, w, h);
 
           canvas.toBlob((blob) => {
-            zip.file(`logo-fixed-${index + 1}.png`, blob);
+            zip.file(`logo-${index + 1}.png`, blob);
             resolve();
           });
         };
@@ -121,41 +137,41 @@ function App() {
       <main style={{ flex: 1, padding: '3rem 0', backgroundColor: 'var(--bg-body)' }}>
         <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           
-          {/* Hero Section */}
           <div style={{ textAlign: 'center', marginBottom: '2.5rem', maxWidth: '600px' }}>
             <h1 style={{ 
               fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem',
-              background: 'linear-gradient(to right, var(--text-main), var(--primary))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
+              color: 'var(--text-main)'
             }}>
-              Standardize Your Logos
+              Standardize Your <span style={{ color: 'var(--primary)' }}>Logos</span>
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.6' }}>
-              Paste screenshots or raw logos directly from your clipboard. We'll center, pad, and resize them to your exact specifications.
+              Paste screenshots. Customize backgrounds per image. Download standardized sizes.
             </p>
           </div>
 
-          {/* Main Card */}
           <div style={{
             width: '100%',
-            maxWidth: '650px',
+            maxWidth: '700px',
             backgroundColor: 'var(--bg-card)',
             borderRadius: 'var(--radius-lg)',
             boxShadow: 'var(--shadow-lg)',
-            overflow: 'hidden',
+            overflow: 'visible', // Changed to visible for Popover to render outside
             border: '1px solid var(--border)'
           }}>
             
-            <Controls config={config} setConfig={setConfig} />
+            <Controls 
+              config={config} 
+              setConfig={setConfig} 
+              onApplyColorToAll={handleApplyColorToAll}
+            />
             
             <ImageGrid images={images} setImages={setImages} />
             
-            {/* Action Bar */}
             <div style={{
               padding: '1.5rem',
               backgroundColor: '#fff',
-              borderTop: '1px solid var(--border)'
+              borderTop: '1px solid var(--border)',
+              borderRadius: '0 0 var(--radius-lg) var(--radius-lg)'
             }}>
               <button 
                 className="btn btn-primary"

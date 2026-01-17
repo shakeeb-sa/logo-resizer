@@ -1,8 +1,16 @@
 import React from 'react';
+import ColorPopover from './ColorPopover';
 
 const ImageGrid = ({ images, setImages }) => {
-  const removeImage = (index) => {
-    setImages(images.filter((_, i) => i !== index));
+  
+  const removeImage = (targetId) => {
+    setImages(images.filter((img) => img.id !== targetId));
+  };
+
+  const updateImageColor = (targetId, newColor) => {
+    setImages(images.map(img => 
+      img.id === targetId ? { ...img, bgColor: newColor } : img
+    ));
   };
 
   if (images.length === 0) {
@@ -48,26 +56,43 @@ const ImageGrid = ({ images, setImages }) => {
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
-        gap: '1rem' 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', 
+        gap: '1.5rem' 
       }}>
-        {images.map((img, idx) => (
-          <div key={idx} style={{
+        {images.map((img) => (
+          <div key={img.id} style={{
             position: 'relative',
             aspectRatio: '1',
             border: '1px solid var(--border)',
             borderRadius: 'var(--radius-md)',
             padding: '8px',
-            backgroundColor: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
+            backgroundColor: '#fff', // The grid cell itself is white
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: 'var(--shadow-sm)'
           }}>
-            <img 
-              src={img} 
-              alt="preview" 
-              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
-            />
+            {/* The Image Preview showing the chosen background */}
+            <div style={{ 
+              width: '100%', height: '100%', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: img.bgColor,
+              backgroundImage: img.bgColor === 'transparent' 
+                ? 'conic-gradient(#eee 0 25%, transparent 0 50%, #eee 0 75%, transparent 0)' 
+                : 'none',
+              backgroundSize: '20px 20px',
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}>
+              <img 
+                src={img.src} 
+                alt="preview" 
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
+              />
+            </div>
+
+            {/* Remove Button (Top Right) */}
             <button
-              onClick={() => removeImage(idx)}
+              onClick={() => removeImage(img.id)}
+              title="Remove Image"
               style={{
                 position: 'absolute', top: '-8px', right: '-8px',
                 width: '24px', height: '24px',
@@ -77,11 +102,20 @@ const ImageGrid = ({ images, setImages }) => {
                 border: '2px solid white',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
-                fontSize: '14px'
+                fontSize: '14px',
+                zIndex: 10
               }}
             >
               ×
             </button>
+
+            {/* Color Picker Trigger (Bottom Right) */}
+            <div style={{ position: 'absolute', bottom: '-10px', right: '-6px', zIndex: 20 }}>
+              <ColorPopover 
+                currentColor={img.bgColor} 
+                onChange={(newColor) => updateImageColor(img.id, newColor)} 
+              />
+            </div>
           </div>
         ))}
       </div>
