@@ -1,16 +1,109 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# LogoFixer Tool 🎨
 
-Currently, two official plugins are available:
+**LogoFixer** is a high-performance, browser-based utility designed to streamline the process of resizing and optimizing logos and images. Built with React and Vite, it allows developers and designers to batch-process images locally without ever uploading sensitive assets to a server.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Key Features
 
-## React Compiler
+-   **Batch Processing**: Upload multiple images simultaneously for rapid resizing.
+    
+-   **Custom Scaling**: Adjust dimensions precisely using intuitive controls for width and height.
+    
+-   **Live Preview**: View changes in real-time within an interactive image grid before exporting.
+    
+-   **Privacy First**: All image processing occurs locally in your browser; no data is sent to external servers.
+    
+-   **Instant Export**: Bundle all processed images into a single, organized `.zip` file for quick downloading.
+    
+-   **UI Customization**: Includes features like color popovers and toast notifications for a polished user experience.
+    
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
 
-## Expanding the ESLint configuration
+-   **Frontend**: React.js (Hooks, Functional Components)
+    
+-   **Build Tool**: Vite
+    
+-   **Styling**: Custom CSS with a focus on a clean, "card-based" dashboard design
+    
+-   **Utilities**:
+    
+    -   **JSZip**: For client-side ZIP archive generation
+        
+    -   **Lucide React / React Icons**: For professional iconography
+        
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 📁 Project Structure
+
+Plaintext
+
+```
+src/
+├── components/       # Reusable UI components (Header, Footer, Toast, etc.)
+├── assets/           # Static assets and SVGs
+├── App.jsx           # Main application logic and state management
+├── index.css         # Global styling and layout definitions
+└── main.jsx          # Application entry point
+
+```
+
+## ⚙️ Installation & Setup
+
+To run this project locally, follow these steps:
+
+1.  **Clone the repository**:
+    
+    Bash
+    
+    ```
+    git clone https://github.com/your-username/logo-resizer.git
+    cd logo-resizer
+    
+    ```
+    
+2.  **Install dependencies**:
+    
+    Bash
+    
+    ```
+    npm install
+    
+    ```
+    
+3.  **Start the development server**:
+    
+    Bash
+    
+    ```
+    npm run dev
+    
+    ```
+    
+4.  **Build for production**:
+    
+    Bash
+    
+    ```
+    npm run build
+    
+    ```
+    
+
+## 📖 Usage
+
+1.  **Upload**: Drag and drop or select the images you wish to resize.
+    
+2.  **Configure**: Use the **Controls** panel to set your desired dimensions or scale.
+    
+3.  **Preview**: Check the **Image Grid** to ensure all logos look correct.
+    
+4.  **Download**: Click "Download ZIP Bundle" to save all your resized assets at once.
+    
+
+----------
+
+### 📝 License
+
+This project is open-source and available under the MIT License.
+
+Created by [Shakeeb Ahmed]. All processing happens in your browser.
