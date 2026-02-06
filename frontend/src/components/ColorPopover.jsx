@@ -1,19 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-
-const PRESETS = [
-  { color: '#ffffff', label: 'White' },
-  { color: '#000000', label: 'Black' },
-  { color: 'transparent', label: 'Transparent' },
-  { color: '#f1f5f9', label: 'Slate 100' },
-  { color: '#cbd5e1', label: 'Slate 300' },
-  { color: '#475569', label: 'Slate 600' },
-  { color: '#ef4444', label: 'Red' },
-  { color: '#3b82f6', label: 'Blue' },
-];
+import { useAuth } from '../context/AuthContext.jsx';
 
 const ColorPopover = ({ currentColor, onChange }) => {
+  const { user, updateBrandKit } = useAuth();
+  
+  // RESTORED: These are required for the menu to work
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef(null);
+  
+  // Combine System Defaults with User's MongoDB favorite colors
+  const systemDefaults = ['#ffffff', '#000000', 'transparent'];
+  const userColors = user?.favoriteColors || [];
+  const allPresets = [...new Set([...systemDefaults, ...userColors])];
+
+  const handleAddCustomColor = (color) => {
+    onChange(color);
+    // If color isn't already saved, sync it to MongoDB
+    if (!userColors.includes(color) && color !== 'transparent') {
+        const newColors = [...userColors, color].slice(-8); // Keep last 8
+        updateBrandKit({ favoriteColors: newColors });
+    }
+  };
 
   // Close when clicking outside
   useEffect(() => {
@@ -67,35 +74,34 @@ const ColorPopover = ({ currentColor, onChange }) => {
           
           {/* Presets Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
-            {PRESETS.map((p) => (
-              <button
-                key={p.label}
-                onClick={() => { onChange(p.color); setIsOpen(false); }}
-                title={p.label}
-                style={{
-                  width: '100%',
-                  aspectRatio: '1',
-                  borderRadius: '50%',
-                  border: currentColor === p.color ? '2px solid var(--primary)' : '1px solid #e2e8f0',
-                  background: p.color === 'transparent' 
-                    ? 'conic-gradient(#ccc 0 25%, #fff 0 50%, #ccc 0 75%, #fff 0)' 
-                    : p.color,
-                  cursor: 'pointer',
-                  padding: 0
-                }}
-              />
-            ))}
+            {allPresets.map((color) => (
+  <button
+    key={color}
+    onClick={() => { onChange(color); setIsOpen(false); }}
+    style={{
+      width: '100%',
+      aspectRatio: '1',
+      borderRadius: '50%',
+      border: currentColor === color ? '2px solid var(--primary)' : '1px solid #e2e8f0',
+      background: color === 'transparent' 
+        ? 'conic-gradient(#ccc 0 25%, #fff 0 50%, #ccc 0 75%, #fff 0)' 
+        : color,
+      cursor: 'pointer',
+      padding: 0
+    }}
+  />
+))}
           </div>
 
           {/* Custom Picker */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
             <label style={{ fontSize: '0.75rem', color: '#64748b' }}>Custom:</label>
             <input 
-              type="color" 
-              value={currentColor === 'transparent' ? '#ffffff' : currentColor}
-              onChange={(e) => onChange(e.target.value)}
-              style={{ flex: 1, height: '30px', border: 'none', cursor: 'pointer', background: 'none' }}
-            />
+  type="color" 
+  value={currentColor === 'transparent' ? '#ffffff' : currentColor}
+  onChange={(e) => handleAddCustomColor(e.target.value)} // Updated to use our save logic
+  style={{ flex: 1, height: '30px', border: 'none', cursor: 'pointer', background: 'none' }}
+/>
           </div>
         </div>
       )}
